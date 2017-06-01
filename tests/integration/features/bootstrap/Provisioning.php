@@ -1,7 +1,8 @@
 <?php
 
 use GuzzleHttp\Client;
-use GuzzleHttp\Message\ResponseInterface;
+use Psr\Http\Message\ResponseInterface;
+use GuzzleHttp\Psr7\Request;
 
 require __DIR__ . '/../../../../lib/composer/autoload.php';
 
@@ -97,12 +98,12 @@ trait Provisioning {
 			$options['auth'] = $this->adminUser;
 		}
 
-		$options['body'] = [
-							'userid' => $user,
-							'password' => '123456'
-							];
+		$options['form_params'] = [
+			'userid' => $user,
+			'password' => '123456'
+		];
 
-		$this->response = $client->send($client->createRequest("POST", $fullUrl, $options));
+		$this->response = $client->send(new Request("POST", $fullUrl), $options);
 		$this->rememberTheUser($user);
 
 		//Quick hack to login once with the current user
@@ -110,7 +111,7 @@ trait Provisioning {
 			'auth' => [$user, '123456'],
 		];
 		$url = $fullUrl.'/'.$user;
-		$client->send($client->createRequest('GET', $url, $options2));
+		$client->send(new Request('GET', $url), $options2);
 	}
 
 	public function createUser($user) {
@@ -277,11 +278,11 @@ trait Provisioning {
 			$options['auth'] = $this->adminUser;
 		}
 
-		$options['body'] = [
-							'groupid' => $group,
-							];
+		$options['form_params'] = [
+			'groupid' => $group,
+		];
 
-		$this->response = $client->send($client->createRequest("POST", $fullUrl, $options));
+		$this->response = $client->send(new Request("POST", $fullUrl), $options);
 		$this->rememberTheGroup($group);
 	}
 
@@ -296,7 +297,7 @@ trait Provisioning {
 			$options['auth'] = $this->adminUser;
 		}
 
-		$this->response = $client->send($client->createRequest("PUT", $fullUrl, $options));
+		$this->response = $client->send(new Request("PUT", $fullUrl), $options);
 	}
 
 	/**
@@ -311,7 +312,7 @@ trait Provisioning {
 			$options['auth'] = $this->adminUser;
 		}
 
-		$this->response = $client->send($client->createRequest("DELETE", $fullUrl, $options));
+		$this->response = $client->send(new Request("DELETE", $fullUrl), $options);
 	}
 
 	/**
@@ -326,7 +327,7 @@ trait Provisioning {
 			$options['auth'] = $this->adminUser;
 		}
 
-		$this->response = $client->send($client->createRequest("DELETE", $fullUrl, $options));
+		$this->response = $client->send(new Request("DELETE", $fullUrl), $options);
 	}
 
 	/**
@@ -353,11 +354,11 @@ trait Provisioning {
 			$options['auth'] = $this->adminUser;
 		}
 
-		$options['body'] = [
-							'groupid' => $group,
-							];
+		$options['form_params'] = [
+			'groupid' => $group,
+		];
 
-		$this->response = $client->send($client->createRequest("POST", $fullUrl, $options));
+		$this->response = $client->send(new Request("POST", $fullUrl), $options);
 	}
 
 	public function groupExists($group) {
@@ -434,10 +435,10 @@ trait Provisioning {
 		if ($this->currentUser === 'admin') {
 			$options['auth'] = $this->adminUser;
 		}
-		$options['body'] = [
-							'groupid' => $group
-							];
-		$this->response = $client->send($client->createRequest("POST", $fullUrl, $options));
+		$options['form_params'] = [
+			'groupid' => $group
+		];
+		$this->response = $client->send(new Request("POST", $fullUrl), $options);
 		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
 	}
 
@@ -532,7 +533,7 @@ trait Provisioning {
 	 * @return array
 	 */
 	public function getArrayOfUsersResponded($resp) {
-		$listCheckedElements = $resp->xml()->data[0]->users[0]->element;
+		$listCheckedElements = $this->getResponseXml($resp)->data[0]->users[0]->element;
 		$extractedElementsArray = json_decode(json_encode($listCheckedElements), 1);
 		return $extractedElementsArray;
 	}
@@ -543,7 +544,7 @@ trait Provisioning {
 	 * @return array
 	 */
 	public function getArrayOfGroupsResponded($resp) {
-		$listCheckedElements = $resp->xml()->data[0]->groups[0]->element;
+		$listCheckedElements = $this->getResponseXml($resp)->data[0]->groups[0]->element;
 		$extractedElementsArray = json_decode(json_encode($listCheckedElements), 1);
 		return $extractedElementsArray;
 	}
@@ -554,7 +555,7 @@ trait Provisioning {
 	 * @return array
 	 */
 	public function getArrayOfAppsResponded($resp) {
-		$listCheckedElements = $resp->xml()->data[0]->apps[0]->element;
+		$listCheckedElements = $this->getResponseXml($resp)->data[0]->apps[0]->element;
 		$extractedElementsArray = json_decode(json_encode($listCheckedElements), 1);
 		return $extractedElementsArray;
 	}
@@ -565,7 +566,7 @@ trait Provisioning {
 	 * @return array
 	 */
 	public function getArrayOfSubadminsResponded($resp) {
-		$listCheckedElements = $resp->xml()->data[0]->element;
+		$listCheckedElements = $this->getResponseXml($resp)->data[0]->element;
 		$extractedElementsArray = json_decode(json_encode($listCheckedElements), 1);
 		return $extractedElementsArray;
 	}
@@ -620,7 +621,7 @@ trait Provisioning {
 		}
 
 		$this->response = $client->get($fullUrl, $options);
-		PHPUnit_Framework_Assert::assertEquals("false", $this->response->xml()->data[0]->enabled);
+		PHPUnit_Framework_Assert::assertEquals("false", $this->getResponseXml()->data[0]->enabled);
 	}
 
 	/**
@@ -636,7 +637,7 @@ trait Provisioning {
 		}
 
 		$this->response = $client->get($fullUrl, $options);
-		PHPUnit_Framework_Assert::assertEquals("true", $this->response->xml()->data[0]->enabled);
+		PHPUnit_Framework_Assert::assertEquals("true", $this->getResponseXml()->data[0]->enabled);
 	}
 
 	/**
@@ -675,7 +676,7 @@ trait Provisioning {
 		$options = [];
 		$options['auth'] = $this->adminUser;
 		$this->response = $client->get($fullUrl, $options);
-		return $this->response->xml()->data[0]->home;
+		return $this->getResponseXml()->data[0]->home;
 	}
 
 	/**
@@ -683,7 +684,7 @@ trait Provisioning {
 	 * @param \Behat\Gherkin\Node\TableNode|null $body
 	 */
 	public function checkUserAttributes($body) {
-		$data = $this->response->xml()->data[0];
+		$data = $this->getResponseXml()->data[0];
 		if ($body instanceof \Behat\Gherkin\Node\TableNode) {
 			$fd = $body->getRowsHash();
 			foreach ($fd as $field => $value) {
