@@ -34,6 +34,12 @@ interface ITheme {
 
 	/**
 	 * @return string
+	 * @since 10.0.7
+	 */
+	public function getBaseDirectory();
+
+	/**
+	 * @return string
 	 * @since 10.0.3
 	 */
 	public function getDirectory();
