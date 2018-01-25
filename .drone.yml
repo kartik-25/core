@@ -84,7 +84,7 @@ pipeline:
         TEST_SUITE: phpunit
 
   codecov:
-    image: plugins/codecov:1
+    image: plugins/codecov:2
     secrets: [codecov_token]
     debug: true
     pull: true
