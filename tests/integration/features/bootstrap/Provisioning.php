@@ -20,10 +20,10 @@ trait Provisioning {
 	private $createdGroups = [];
 
 	/**
-	 * @Given /^user "([^"]*)" exists$/
+	 * @When /^the administrator creates user "([^"]*)"$/
 	 * @param string $user
 	 */
-	public function assureUserExists($user) {
+	public function adminCreatesUser($user) {
 		if ( !$this->userExists($user) ) {
 			$previous_user = $this->currentUser;
 			$this->currentUser = "admin";
@@ -34,12 +34,44 @@ trait Provisioning {
 	}
 
 	/**
+	 * @Given /^user "([^"]*)" has been created$/
+	 * @param string $user
+	 */
+	public function userHasBeenCreated($user) {
+		$this->adminCreatesUser($user);
+	}
+
+	/**
+	 * @Given /^user "([^"]*)" exists$/
+	 * @param string $user
+	 */
+	public function assureUserExists($user) {
+		$this->adminCreatesUser($user);
+	}
+
+	/**
+	 * @Then /^user "([^"]*)" should exist$/
+	 * @param string $user
+	 */
+	public function userShouldExist($user) {
+		PHPUnit_Framework_Assert::assertTrue($this->userExists($user));
+		$this->rememberTheUser($user);
+	}
+
+	/**
 	 * @Then /^user "([^"]*)" already exists$/
 	 * @param string $user
 	 */
 	public function userAlreadyExists($user) {
-		PHPUnit_Framework_Assert::assertTrue($this->userExists($user));
-		$this->rememberTheUser($user);
+		$this->userShouldExist($user);
+	}
+
+	/**
+	 * @Then /^user "([^"]*)" should not exist$/
+	 * @param string $user
+	 */
+	public function userShouldNotExist($user) {
+		PHPUnit_Framework_Assert::assertFalse($this->userExists($user));
 	}
 
 	/**
@@ -47,7 +79,16 @@ trait Provisioning {
 	 * @param string $user
 	 */
 	public function userDoesNotAlreadyExist($user) {
-		PHPUnit_Framework_Assert::assertFalse($this->userExists($user));
+		$this->userShouldNotExist($user);
+	}
+
+	/**
+	 * @Then /^group "([^"]*)" should exist$/
+	 * @param string $group
+	 */
+	public function groupShouldExist($group) {
+		PHPUnit_Framework_Assert::assertTrue($this->groupExists($group));
+		$this->rememberTheGroup($group);
 	}
 
 	/**
@@ -55,8 +96,15 @@ trait Provisioning {
 	 * @param string $group
 	 */
 	public function groupAlreadyExists($group) {
-		PHPUnit_Framework_Assert::assertTrue($this->groupExists($group));
-		$this->rememberTheGroup($group);
+		$this->groupShouldExist($group);
+	}
+
+	/**
+	 * @Then /^group "([^"]*)" should not exist$/
+	 * @param string $group
+	 */
+	public function groupShouldNotExist($group) {
+		PHPUnit_Framework_Assert::assertFalse($this->groupExists($group));
 	}
 
 	/**
@@ -64,7 +112,29 @@ trait Provisioning {
 	 * @param string $group
 	 */
 	public function groupDoesNotAlreadyExist($group) {
-		PHPUnit_Framework_Assert::assertFalse($this->groupExists($group));
+		$this->groupShouldNotExist($group);
+	}
+
+	/**
+	 * @When /^the administrator deletes user "([^"]*)"$/
+	 * @param string $user
+	 */
+	public function adminDeletesUser($user) {
+		if ($this->userExists($user)) {
+			$previous_user = $this->currentUser;
+			$this->currentUser = "admin";
+			$this->deleteTheUser($user);
+			$this->currentUser = $previous_user;
+		}
+		PHPUnit_Framework_Assert::assertFalse($this->userExists($user));
+	}
+
+	/**
+	 * @Given /^user "([^"]*)" has been deleted$/
+	 * @param string $user
+	 */
+	public function userHasBeenDeleted($user) {
+		$this->adminDeletesUser($user);
 	}
 
 	/**
@@ -72,13 +142,7 @@ trait Provisioning {
 	 * @param string $user
 	 */
 	public function assureUserDoesNotExist($user) {
-		if ($this->userExists($user)) {
-			$previous_user = $this->currentUser;
-			$this->currentUser = "admin";
-			$this->deletingTheUser($user);
-			$this->currentUser = $previous_user;
-		}
-		PHPUnit_Framework_Assert::assertFalse($this->userExists($user));
+		$this->adminDeletesUser($user);
 	}
 
 	public function rememberTheUser($user) {
@@ -124,7 +188,7 @@ trait Provisioning {
 	public function deleteUser($user) {
 		$previous_user = $this->currentUser;
 		$this->currentUser = "admin";
-		$this->deletingTheUser($user);
+		$this->deleteTheUser($user);
 		PHPUnit_Framework_Assert::assertFalse($this->userExists($user));
 		$this->currentUser = $previous_user;
 	}
@@ -140,7 +204,7 @@ trait Provisioning {
 	public function deleteGroup($group) {
 		$previous_user = $this->currentUser;
 		$this->currentUser = "admin";
-		$this->deletingTheGroup($group);
+		$this->deleteTheGroup($group);
 		PHPUnit_Framework_Assert::assertFalse($this->groupExists($group));
 		$this->currentUser = $previous_user;
 	}
@@ -160,11 +224,11 @@ trait Provisioning {
 	}
 
 	/**
-	 * @Then /^check that user "([^"]*)" belongs to group "([^"]*)"$/
+	 * @Then /^user "([^"]*)" should belong to group "([^"]*)"$/
 	 * @param string $user
 	 * @param string $group
 	 */
-	public function checkThatUserBelongsToGroup($user, $group) {
+	public function userShouldBelongToGroup($user, $group) {
 		$fullUrl = $this->baseUrl . "v2.php/cloud/users/$user/groups";
 		$client = new Client();
 		$options = [];
@@ -180,11 +244,20 @@ trait Provisioning {
 	}
 
 	/**
-	 * @Then /^check that user "([^"]*)" does not belong to group "([^"]*)"$/
+	 * @Then /^check that user "([^"]*)" belongs to group "([^"]*)"$/
 	 * @param string $user
 	 * @param string $group
 	 */
-	public function checkThatUserDoesNotBelongToGroup($user, $group) {
+	public function checkThatUserBelongsToGroup($user, $group) {
+		$this->userShouldBelongToGroup($user, $group);
+	}
+
+	/**
+	 * @Then /^user "([^"]*)" should not belong to group "([^"]*)"$/
+	 * @param string $user
+	 * @param string $group
+	 */
+	public function userShouldNotBelongToGroup($user, $group) {
 		$fullUrl = $this->baseUrl . "v2.php/cloud/users/$user/groups";
 		$client = new Client();
 		$options = [];
@@ -197,6 +270,15 @@ trait Provisioning {
 		sort($respondedArray);
 		PHPUnit_Framework_Assert::assertNotContains($group, $respondedArray);
 		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
+	}
+
+	/**
+	 * @Then /^check that user "([^"]*)" does not belong to group "([^"]*)"$/
+	 * @param string $user
+	 * @param string $group
+	 */
+	public function checkThatUserDoesNotBelongToGroup($user, $group) {
+		$this->userShouldNotBelongToGroup($user, $group);
 	}
 
 	public function userBelongsToGroup($user, $group) {
@@ -218,11 +300,11 @@ trait Provisioning {
 	}
 
 	/**
-	 * @Given /^user "([^"]*)" belongs to group "([^"]*)"$/
+	 * @When /^the administrator adds user "([^"]*)" to group "([^"]*)"$/
 	 * @param string $user
 	 * @param string $group
 	 */
-	public function assureUserBelongsToGroup($user, $group) {
+	public function adminAddsUserToGroup($user, $group) {
 		$previous_user = $this->currentUser;
 		$this->currentUser = "admin";
 
@@ -235,23 +317,21 @@ trait Provisioning {
 	}
 
 	/**
-	 * @Given /^user "([^"]*)" does not belong to group "([^"]*)"$/
+	 * @Given /^user "([^"]*)" has been added to group "([^"]*)"$/
 	 * @param string $user
 	 * @param string $group
 	 */
-	public function userDoesNotBelongToGroup($user, $group) {
-		$fullUrl = $this->baseUrl . "v2.php/cloud/users/$user/groups";
-		$client = new Client();
-		$options = [];
-		if ($this->currentUser === 'admin') {
-			$options['auth'] = $this->adminUser;
-		}
+	public function userHasBeenAddedToGroup($user, $group) {
+		$this->adminAddsUserToGroup($user, $group);
+	}
 
-		$this->response = $client->get($fullUrl, $options);
-		$groups = [$group];
-		$respondedArray = $this->getArrayOfGroupsResponded($this->response);
-		PHPUnit_Framework_Assert::assertNotEquals($groups, $respondedArray, "", 0.0, 10, true);
-		PHPUnit_Framework_Assert::assertEquals(200, $this->response->getStatusCode());
+	/**
+	 * @Given /^user "([^"]*)" belongs to group "([^"]*)"$/
+	 * @param string $user
+	 * @param string $group
+	 */
+	public function assureUserBelongsToGroup($user, $group) {
+		$this->adminAddsUserToGroup($user, $group);
 	}
 
 	/**
@@ -266,10 +346,10 @@ trait Provisioning {
 	}
 
 	/**
-	 * @When /^creating the group "([^"]*)"$/
+	 * @When /^the administrator creates group "([^"]*)"$/
 	 * @param string $group
 	 */
-	public function creatingTheGroup($group) {
+	public function adminCreatesGroup($group) {
 		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/groups";
 		$client = new Client();
 		$options = [];
@@ -286,9 +366,25 @@ trait Provisioning {
 	}
 
 	/**
-	 * @When /^assure user "([^"]*)" is disabled$/
+	 * @Given /^group "([^"]*)" has been created$/
+	 * @param string $group
 	 */
-	public function assureUserIsDisabled($user) {
+	public function groupHasBeenCreated($group) {
+		$this->adminCreatesGroup($group);
+	}
+
+	/**
+	 * @When /^creating the group "([^"]*)"$/
+	 * @param string $group
+	 */
+	public function creatingTheGroup($group) {
+		$this->adminCreatesGroup($group);
+	}
+
+	/**
+	 * @When /^the administrator disables user "([^"]*)"$/
+	 */
+	public function adminDisablesUser($user) {
 		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users/$user/disable";
 		$client = new Client();
 		$options = [];
@@ -300,10 +396,23 @@ trait Provisioning {
 	}
 
 	/**
-	 * @When /^deleting the user "([^"]*)"$/
+	 * @Given /^user "([^"]*)" has been disabled$/
+	 */
+	public function userHasBeenDisabled($user) {
+		$this->adminDisablesUser($user);
+	}
+
+	/**
+	 * @When /^assure user "([^"]*)" is disabled$/
+	 */
+	public function assureUserIsDisabled($user) {
+		$this->adminDisablesUser($user);
+	}
+
+	/**
 	 * @param string $user
 	 */
-	public function deletingTheUser($user) {
+	public function deleteTheUser($user) {
 		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/users/$user";
 		$client = new Client();
 		$options = [];
@@ -315,10 +424,10 @@ trait Provisioning {
 	}
 
 	/**
-	 * @When /^deleting the group "([^"]*)"$/
+	 * @When /^the administrator deletes group "([^"]*)"$/
 	 * @param string $group
 	 */
-	public function deletingTheGroup($group) {
+	public function adminDeletesGroup($group) {
 		$fullUrl = $this->baseUrl . "v{$this->apiVersion}.php/cloud/groups/$group";
 		$client = new Client();
 		$options = [];
@@ -327,6 +436,21 @@ trait Provisioning {
 		}
 
 		$this->response = $client->send($client->createRequest("DELETE", $fullUrl, $options));
+	}
+
+	/**
+	 * @Given /^group "([^"]*)" has been deleted$/
+	 * @param string $group
+	 */
+	public function groupHasBeenDeleted($group) {
+		$this->adminDeletesGroup($group);
+	}
+
+	/**
+	 * @param string $group
+	 */
+	public function deleteTheGroup($group) {
+		$this->adminDeletesGroup($group);
 	}
 
 	/**
@@ -396,7 +520,7 @@ trait Provisioning {
 		if ($this->groupExists($group)) {
 			$previous_user = $this->currentUser;
 			$this->currentUser = "admin";
-			$this->deletingTheGroup($group);
+			$this->deleteTheGroup($group);
 			$this->currentUser = $previous_user;
 		}
 		PHPUnit_Framework_Assert::assertFalse($this->groupExists($group));
