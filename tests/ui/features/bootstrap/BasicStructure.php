@@ -185,8 +185,14 @@ trait BasicStructure {
 	 */
 	private function createUser(
 		$user, $password, $displayName = null, $email = null, $initialize = true,
-		$method = "api"
+		$method = null
 	) {
+		if ($method === null && getenv("TEST_LDAP") === "true") {
+			//guess yourself
+			$method = "ldap";
+		} else {
+			$method = "api";
+		}
 		$user = trim($user);
 		$method = trim(strtolower($method));
 		$baseUrl = $this->getMinkParameter("base_url");
@@ -216,6 +222,9 @@ trait BasicStructure {
 						. $result["stdOut"] . " " . $result["stdErr"]
 					);
 				}
+				break;
+			case "ldap";
+				echo "not implemented so assume user exists on LDAP";
 				break;
 			default:
 				throw new InvalidArgumentException(
